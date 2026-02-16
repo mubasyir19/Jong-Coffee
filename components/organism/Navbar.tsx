@@ -5,15 +5,31 @@ import Link from "next/link";
 import { Button } from "../ui/button";
 import { clickersript } from "@/lib/font";
 import { useAppSelector } from "@/store/hooks";
-import { selectCartCount, selectCartItems } from "@/store/cartSlice";
+import { selectCartItems } from "@/store/cartSlice";
 import { useState } from "react";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../ui/dialog";
+import { signOut, useSession } from "next-auth/react";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState<boolean>(false);
   const count = useAppSelector(selectCartItems);
 
+  const { data: session, status } = useSession();
+  const user = session?.user;
+
   const handleOpenMenu = () => {
     setMenuOpen(!menuOpen);
+  };
+
+  const handleLogout = async () => {
+    await signOut({ callbackUrl: "/" }); // Akan logout dan balik ke homepage
   };
 
   return (
@@ -21,7 +37,7 @@ export default function Navbar() {
       <div className="relative container mx-auto flex items-center justify-between px-6 py-4">
         <div className="">
           <h1 className={`${clickersript.className} text-xl text-white`}>
-            Jong Coffee
+            Jong <span className="text-accent">Coffee</span>
           </h1>
         </div>
         <ul className="hidden items-center gap-4 md:flex">
@@ -55,11 +71,45 @@ export default function Navbar() {
               </div>
             </Link>
           </div>
-          <Link href={`/login`}>
-            <Button variant={"thrid"} size={"sm"}>
-              Login
-            </Button>
-          </Link>
+          {status === "authenticated" ? (
+            <div className="">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant={"outline"} size={"sm"} className="group">
+                    <User className="text-accent size-5 group-hover:text-white" />
+                    <span className="text-accent group-hover:text-white">
+                      {user?.name}
+                    </span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Logout Akun?</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-3">
+                    <DialogClose asChild>
+                      <Button variant="outline" className="w-full">
+                        Cancel
+                      </Button>
+                    </DialogClose>
+                    <Button
+                      onClick={handleLogout}
+                      size={"sm"}
+                      className="w-full bg-red-500"
+                    >
+                      Sign Out
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+          ) : (
+            <Link href={`/login`}>
+              <Button variant={"thrid"} size={"sm"}>
+                Login
+              </Button>
+            </Link>
+          )}
         </div>
         <div className="md:hidden">
           <button onClick={handleOpenMenu}>
@@ -111,12 +161,48 @@ export default function Navbar() {
                       </span>
                     </button>
                   </Link>
-                  <Link href={`/login`}>
-                    <button className="bg-accent flex w-full items-center justify-center gap-2 rounded-md py-2 text-center text-sm text-white">
-                      <User className="size-5 text-white" />
-                      Login
-                    </button>
-                  </Link>
+                  {status === "authenticated" ? (
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          variant={"outline"}
+                          size={"sm"}
+                          className="group"
+                        >
+                          <User className="text-accent size-5 group-hover:text-white" />
+                          <span className="text-accent group-hover:text-white">
+                            {user?.name}
+                          </span>
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Logout Akun?</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-3">
+                          <DialogClose asChild>
+                            <Button variant="outline" className="w-full">
+                              Cancel
+                            </Button>
+                          </DialogClose>
+                          <Button
+                            onClick={handleLogout}
+                            size={"sm"}
+                            className="w-full bg-red-500"
+                          >
+                            Sign Out
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  ) : (
+                    <Link href={`/login`}>
+                      <button className="bg-accent flex w-full items-center justify-center gap-2 rounded-md py-2 text-center text-sm text-white">
+                        <User className="size-5 text-white" />
+                        Login
+                      </button>
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>

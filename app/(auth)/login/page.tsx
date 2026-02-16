@@ -1,3 +1,4 @@
+import { signIn } from "@/app/auth";
 import { Button } from "@/components/ui/button";
 import { FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -59,18 +60,26 @@ export default function LoginPage() {
           <div className="my-5 text-center">
             <p className="grow text-sm text-gray-400">Atau login dengan</p>
           </div>
-          <div className="">
-            <button className="flex h-10 w-full items-center justify-center gap-2 rounded-md border border-gray-700 bg-white/10 px-6 backdrop-blur-3xl has-[>svg]:px-4">
+          <form
+            action={async () => {
+              "use server";
+              await signIn("google", { redirectTo: "/" });
+            }}
+          >
+            <button
+              type="submit"
+              className="flex h-10 w-full items-center justify-center gap-2 rounded-md border border-gray-700 bg-white/10 px-6 backdrop-blur-3xl transition-all hover:bg-white/20"
+            >
               <Image
                 src={`/icons/google.svg`}
-                width={100}
-                height={100}
+                width={20}
+                height={20}
                 alt="google"
                 className="size-5"
               />
               <p className="text-white">Google</p>
             </button>
-          </div>
+          </form>
         </div>
       </div>
     </div>
