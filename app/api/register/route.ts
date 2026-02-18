@@ -1,11 +1,8 @@
 import { userTable } from "@/db/schema";
-import { drizzle } from "drizzle-orm/node-postgres";
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
-
-// const client = drizzle(process.env.DATABASE_URL!);
-const db = drizzle(process.env.DATABASE_URL!);
+import { db } from "@/db";
 
 export async function POST(request: Request) {
   try {

@@ -3,10 +3,8 @@ import Google from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { userTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/node-postgres";
 import bcrypt from "bcryptjs";
-
-const db = drizzle(process.env.DATABASE_URL!);
+import { db } from "@/db";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
