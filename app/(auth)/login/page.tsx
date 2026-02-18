@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { loginWithGoogle } from "@/hooks/loginWithGoogle";
-import { useLogin } from "@/hooks/useLogin";
 import { clickersript } from "@/lib/font";
 import { signIn } from "next-auth/react";
 import Image from "next/image";
@@ -20,7 +19,7 @@ export default function LoginPage() {
     email: "",
     password: "",
   });
-  const { actionLogin, loading, error } = useLogin();
+  const [loading, setLoading] = useState<boolean>(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -29,6 +28,7 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     try {
       if (!formLogin.email || !formLogin.password) {
         toast.error("Silakan isi form dengan lengkap");
@@ -38,34 +38,20 @@ export default function LoginPage() {
       const res = await signIn("credentials", {
         email: formLogin.email,
         password: formLogin.password,
-        redirect: false, // Menghindari reload halaman otomatis
+        redirect: false,
       });
 
       if (res?.error) {
-        // Error ini datang dari return null di callback authorize
         toast.error("Email atau password salah");
-        // setLoading(false);
+        setLoading(false);
       } else {
         toast.success("Berhasil login");
-
-        // Beri jeda sedikit agar toast terlihat, lalu arahkan ke home/dashboard
         setTimeout(() => {
           router.push("/");
-          router.refresh(); // Penting: memicu server component untuk mengambil session baru
+          router.refresh();
         }, 500);
+        setLoading(false);
       }
-
-      // const payloadLogin = {
-      //   email: formLogin.email,
-      //   password: formLogin.password,
-      // };
-
-      // await actionLogin(payloadLogin);
-      // toast.success("Berhasil login");
-
-      // setTimeout(() => {
-      //   router.push("/");
-      // }, 500);
     } catch (error) {
       toast.error((error as Error).message || "Gagal Login");
     }

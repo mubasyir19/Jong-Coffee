@@ -16,8 +16,6 @@ export function useCheckout() {
         throw new Error("Nomor Admin belum dikonfigurasi");
       }
 
-      console.log("ini items nya", input.items);
-
       const totalPrice = input.items.reduce(
         (acc, item) => acc + item.price * item.quantity,
         0,

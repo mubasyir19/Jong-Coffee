@@ -19,7 +19,6 @@ export default function Register() {
     confirmPassword: "",
   });
   const { loading, error, actionRegister } = useRegister();
-  console.log("ini data yang akan dikirim = ", formRegist);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
