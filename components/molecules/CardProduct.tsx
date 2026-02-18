@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useAppDispatch } from "@/store/hooks";
 import { addItem } from "@/store/cartSlice";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
 
 type VariantProduct = {
   name: string;
@@ -30,6 +31,8 @@ export default function CardProduct({
 }: CardProductProps) {
   const [activeVariant, setActiveVariant] = useState(variant[0]);
   const dispatch = useAppDispatch();
+
+  const { status } = useSession();
 
   return (
     <div
@@ -74,7 +77,12 @@ export default function CardProduct({
             </button>
           </Link>
           <button
-            onClick={() => {
+            onClick={async () => {
+              if (status !== "authenticated") {
+                toast.error("Silakan login terlebih dahulu");
+                return;
+              }
+
               const payload = {
                 id: `${createSlug(name)}`,
                 name,
@@ -83,8 +91,29 @@ export default function CardProduct({
                 price: activeVariant.price,
                 quantity: 1,
               };
-              dispatch(addItem(payload));
-              toast.success("Menambahkan 1 item ke keranjang");
+
+              try {
+                const res = await fetch("/api/cart", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(payload),
+                });
+
+                if (res.status === 401) {
+                  toast.error("Silakan login terlebih dahulu");
+                  return;
+                }
+
+                if (!res.ok) {
+                  toast.error("Gagal menambahkan ke keranjang");
+                  return;
+                }
+
+                dispatch(addItem(payload));
+                toast.success("Menambahkan 1 item ke keranjang");
+              } catch (err) {
+                toast.error("Terjadi kesalahan jaringan");
+              }
             }}
             className="bg-accent/50 hover:bg-accent/70 shrink-0 rounded-md px-3 py-2 text-sm text-white"
           >

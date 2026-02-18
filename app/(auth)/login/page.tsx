@@ -1,12 +1,76 @@
-import { signIn } from "@/app/auth";
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { loginWithGoogle } from "@/hooks/loginWithGoogle";
+import { useLogin } from "@/hooks/useLogin";
 import { clickersript } from "@/lib/font";
+import { signIn } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import React, { useState } from "react";
+import { toast } from "sonner";
 
 export default function LoginPage() {
+  const router = useRouter();
+
+  const [formLogin, setFormLogin] = useState({
+    email: "",
+    password: "",
+  });
+  const { actionLogin, loading, error } = useLogin();
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormLogin((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (!formLogin.email || !formLogin.password) {
+        toast.error("Silakan isi form dengan lengkap");
+        return;
+      }
+
+      const res = await signIn("credentials", {
+        email: formLogin.email,
+        password: formLogin.password,
+        redirect: false, // Menghindari reload halaman otomatis
+      });
+
+      if (res?.error) {
+        // Error ini datang dari return null di callback authorize
+        toast.error("Email atau password salah");
+        // setLoading(false);
+      } else {
+        toast.success("Berhasil login");
+
+        // Beri jeda sedikit agar toast terlihat, lalu arahkan ke home/dashboard
+        setTimeout(() => {
+          router.push("/");
+          router.refresh(); // Penting: memicu server component untuk mengambil session baru
+        }, 500);
+      }
+
+      // const payloadLogin = {
+      //   email: formLogin.email,
+      //   password: formLogin.password,
+      // };
+
+      // await actionLogin(payloadLogin);
+      // toast.success("Berhasil login");
+
+      // setTimeout(() => {
+      //   router.push("/");
+      // }, 500);
+    } catch (error) {
+      toast.error((error as Error).message || "Gagal Login");
+    }
+  };
+
   return (
     <div className="h-screen bg-[url('/images/login.jpg')] bg-cover bg-center">
       <div className="flex h-full w-full flex-col items-center justify-center bg-black/50 p-6">
@@ -21,7 +85,7 @@ export default function LoginPage() {
               Silakan login terlebih dahulu{" "}
             </p>
           </div>
-          <form className="mt-5 space-y-4">
+          <div className="mt-5 space-y-4">
             <div className="space-y-2">
               <FieldLabel htmlFor="email" className="text-white">
                 Email Address
@@ -29,8 +93,10 @@ export default function LoginPage() {
               <Input
                 type="email"
                 name="email"
+                value={formLogin.email}
+                onChange={handleChange}
                 placeholder="jhondoe@mail.com"
-                className="placeholder:text-sm"
+                className="text-white placeholder:text-sm"
               />
             </div>
             <div className="space-y-2">
@@ -47,25 +113,39 @@ export default function LoginPage() {
               <Input
                 type="password"
                 name="password"
+                value={formLogin.password}
+                onChange={handleChange}
                 placeholder="******"
-                className="placeholder:text-sm"
+                className="text-white placeholder:text-sm"
               />
             </div>
             <div className="">
-              <Button variant={"thrid"} size={"lg"} className="w-full">
-                Sign In to Your Account
+              <Button
+                onClick={handleSubmit}
+                variant={"thrid"}
+                size={"lg"}
+                className="w-full text-white"
+                disabled={loading}
+              >
+                {loading ? "Loading..." : "Sign In to Your Account"}
               </Button>
             </div>
-          </form>
+          </div>
+          <div className="mt-2">
+            <p className="text-center text-sm text-white">
+              Belum punya akun?
+              <Link
+                href={`/register`}
+                className="text-accent ml-1.5 font-medium"
+              >
+                Daftar
+              </Link>
+            </p>
+          </div>
           <div className="my-5 text-center">
             <p className="grow text-sm text-gray-400">Atau login dengan</p>
           </div>
-          <form
-            action={async () => {
-              "use server";
-              await signIn("google", { redirectTo: "/" });
-            }}
-          >
+          <form action={loginWithGoogle}>
             <button
               type="submit"
               className="flex h-10 w-full items-center justify-center gap-2 rounded-md border border-gray-700 bg-white/10 px-6 backdrop-blur-3xl transition-all hover:bg-white/20"

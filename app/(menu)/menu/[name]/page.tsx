@@ -9,16 +9,18 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 import { useAppDispatch } from "@/store/hooks";
 import { addItem } from "@/store/cartSlice";
+import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 export default function DetailMenuPage() {
   const { name: productName } = useParams();
   const decodeParams = deSlug(productName as string);
   const product = menuCoffe.find((item) => item.name === decodeParams);
 
+  const { status } = useSession();
+
   const [activeVariant, setActiveVariant] = useState(product?.variant[0]);
   const [quantity, setQuantity] = useState<number>(1);
-
-  console.log("ini data product nya = ", product);
 
   const addQty = () => {
     setQuantity((prev) => {
@@ -36,7 +38,11 @@ export default function DetailMenuPage() {
 
   const dispatch = useAppDispatch();
 
-  const addToCart = () => {
+  const addToCart = async () => {
+    if (status !== "authenticated") {
+      toast.error("Silakan login terlebih dahulu");
+      return;
+    }
     if (!product || !activeVariant) return;
     const payload = {
       id: `${createSlug(product.name)}`,
@@ -46,7 +52,28 @@ export default function DetailMenuPage() {
       price: activeVariant.price,
       quantity,
     };
-    dispatch(addItem(payload));
+
+    try {
+      const res = await fetch("/api/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.status === 401) {
+        toast.error("Silakan login terlebih dahulu");
+        return;
+      }
+      if (!res.ok) {
+        toast.error("Gagal menambahkan ke keranjang");
+        return;
+      }
+
+      dispatch(addItem(payload));
+      toast.success("Berhasil ditambahkan ke keranjang");
+    } catch (err) {
+      toast.error("Terjadi kesalahan jaringan");
+    }
   };
 
   return (
