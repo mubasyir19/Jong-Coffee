@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   selectCartItems,
@@ -12,11 +12,58 @@ import {
 } from "@/store/cartSlice";
 import Image from "next/image";
 import Link from "next/link";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../../../components/ui/dialog";
+import { useSession } from "next-auth/react";
+import { InputCheckout } from "@/types/cart";
+import { useCheckout } from "@/hooks/useCart";
+import { toast } from "sonner";
+import { FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 export default function CartPage() {
   const items = useAppSelector(selectCartItems);
   const total = useAppSelector(selectCartTotal);
   const dispatch = useAppDispatch();
+  const { data: session, status } = useSession();
+  const { actionCheckout, loading, error } = useCheckout();
+
+  const [formCheckout, setFormCheckout] = useState<InputCheckout>({
+    name: session?.user.name || "Pelanggan",
+    email: session?.user.email || "-",
+    phoneNumber: "",
+    items: items,
+    totalPrice: total,
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormCheckout((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCheckout = () => {
+    const finalData: InputCheckout = {
+      ...formCheckout,
+      items: items,
+      totalPrice: total,
+    };
+    try {
+      if (!formCheckout.phoneNumber) {
+        return toast.error("Nomor telepon wajib diisi");
+      }
+
+      actionCheckout(finalData);
+      toast.success("Pesanan dibuat");
+    } catch (error) {
+      toast.error((error as Error).message || "Gagal kirim pesanan");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-black py-24">
@@ -116,9 +163,125 @@ export default function CartPage() {
                 Kosongkan Keranjang
               </button>
 
-              <button className="bg-accent/70 w-full rounded-md py-2 text-sm text-white">
-                Checkout
-              </button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <button className="bg-accent/70 w-full rounded-md py-2 text-sm text-white">
+                    Checkout
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="border-accent border bg-black">
+                  <DialogHeader>
+                    <DialogTitle className="text-white">Pesan Menu</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <FieldLabel htmlFor="email" className="text-white">
+                        Nama Lengkap
+                      </FieldLabel>
+                      <Input
+                        type="text"
+                        name="name"
+                        value={formCheckout.name}
+                        onChange={handleChange}
+                        placeholder="Jhon Doe"
+                        className="border-accent border-2 text-white placeholder:text-sm"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <FieldLabel htmlFor="email" className="text-white">
+                        Email
+                      </FieldLabel>
+                      <Input
+                        type="email"
+                        name="email"
+                        value={formCheckout.email}
+                        onChange={handleChange}
+                        placeholder="jhondoe@mail.com"
+                        className="border-accent border-2 text-white placeholder:text-sm"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <FieldLabel htmlFor="email" className="text-white">
+                        Nomor Telepon
+                      </FieldLabel>
+                      <Input
+                        type="text"
+                        name="phoneNumber"
+                        value={formCheckout.phoneNumber}
+                        onChange={handleChange}
+                        placeholder="+62 XXX-XXX-XXX"
+                        className="border-accent border-2 text-white placeholder:text-sm"
+                        required
+                      />
+                    </div>
+                    <div className="">
+                      <p className="text-lg font-medium text-white">
+                        List Pesanan
+                      </p>
+                      <div className="my-2">
+                        <hr className="border border-white/50" />
+                      </div>
+                      {items.map((item) => (
+                        <div
+                          key={item.id}
+                          className="grid grid-cols-4 items-center gap-4 border-b border-gray-800 py-2 last:border-0"
+                        >
+                          {/* Kolom Nama & Variant (Mengambil 2 bagian dari 4) */}
+                          <div className="col-span-2">
+                            <p className="truncate text-sm font-semibold text-white">
+                              {item.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {item.variant}
+                            </p>
+                          </div>
+
+                          {/* Kolom Quantity (Rata Tengah/Kiri agar sejajar vertikal) */}
+                          <div className="text-center md:text-left">
+                            <p className="text-sm text-white">
+                              x {item.quantity}
+                            </p>
+                          </div>
+
+                          {/* Kolom Harga (Rata Kanan) */}
+                          <div className="text-right">
+                            <p className="text-sm font-medium text-white">
+                              Rp{" "}
+                              {(item.quantity * item.price).toLocaleString(
+                                "id-ID",
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="my-2">
+                      <hr className="border border-white/50" />
+                    </div>
+                    <div className="">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm text-white">Total Harga:</p>
+                        <p className="text-sm text-white">
+                          Rp {total.toLocaleString("id-ID")}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="">
+                      <Button
+                        onClick={handleCheckout}
+                        variant={"thrid"}
+                        size={"sm"}
+                        className="w-full text-white"
+                        disabled={loading}
+                      >
+                        {loading ? "Loading..." : "Pesan Sekarang"}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         )}

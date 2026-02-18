@@ -1,17 +1,5 @@
+import { CartItem, CartState } from "@/types/cart";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-
-export type CartItem = {
-  id: string;
-  name: string;
-  imageUrl?: string;
-  variant: string;
-  price: number;
-  quantity: number;
-};
-
-type CartState = {
-  items: CartItem[];
-};
 
 const initialState: CartState = {
   items: [],
